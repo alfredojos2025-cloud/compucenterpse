@@ -1,0 +1,182 @@
+/**
+ * Banner de cookies - Agualogic
+ * CSS propio, sin dependencias de Bootstrap: el banner tiene que funcionar
+ * aunque el JS de Bootstrap falle (ver conflicto de jQuery en CLAUDE.md).
+ */
+
+/* El sitio usa z-index 9999 en los botones flotantes de WhatsApp y carrito. */
+.agl-ck,
+.agl-ck-modal { z-index: 100000; }
+
+.agl-ck[hidden],
+.agl-ck-modal[hidden] { display: none !important; }
+
+/* ---------- Banner ---------- */
+.agl-ck {
+    position: fixed;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: 68rem;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 32px rgba(0, 0, 0, .22);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: .9375rem;
+    line-height: 1.5;
+    color: #212529;
+}
+
+.agl-ck__text { flex: 1 1 auto; margin: 0; }
+.agl-ck__text strong { display: block; margin-bottom: .25rem; font-size: 1rem; }
+.agl-ck__text a { color: #479AD5; text-decoration: underline; }
+
+.agl-ck__actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: .625rem;
+}
+
+/* ---------- Botones ---------- */
+.agl-ck-btn {
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: .625rem 1.125rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color .15s ease, color .15s ease;
+}
+.agl-ck-btn--primary { background: #479AD5; border-color: #479AD5; color: #fff; }
+.agl-ck-btn--primary:hover { background: #3182b8; border-color: #3182b8; }
+.agl-ck-btn--outline { background: #fff; border-color: #ADB5BD; color: #495057; }
+.agl-ck-btn--outline:hover { background: #EEF0F2; }
+.agl-ck-btn--link {
+    background: none; border: none; color: #6c757d;
+    text-decoration: underline; padding: .625rem .25rem;
+}
+.agl-ck-btn--link:hover { color: #212529; }
+.agl-ck-btn:focus-visible,
+.agl-ck-sw input:focus-visible + .agl-ck-sw__track {
+    outline: 2px solid #479AD5;
+    outline-offset: 2px;
+}
+
+/* ---------- Modal de preferencias ---------- */
+.agl-ck-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.agl-ck-modal__box {
+    background: #fff;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 40rem;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .3);
+}
+
+.agl-ck-modal__head {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #EEF0F2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.agl-ck-modal__head h2 { margin: 0; font-size: 1.125rem; font-weight: 700; }
+.agl-ck-modal__close {
+    background: none; border: none; cursor: pointer;
+    font-size: 1.5rem; line-height: 1; color: #6c757d; padding: 0 .25rem;
+}
+.agl-ck-modal__close:hover { color: #212529; }
+
+.agl-ck-modal__body { padding: 1.25rem 1.5rem; overflow-y: auto; }
+
+.agl-ck-modal__foot {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #EEF0F2;
+    background: #F8F9F9;
+    border-radius: 0 0 10px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .625rem;
+}
+
+/* ---------- Categorias ---------- */
+.agl-ck-cat { padding: 1rem 0; border-bottom: 1px solid #EEF0F2; }
+.agl-ck-cat:first-child { padding-top: 0; }
+.agl-ck-cat:last-child { border-bottom: none; padding-bottom: 0; }
+
+.agl-ck-cat__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: .375rem;
+}
+.agl-ck-cat__head h3 { margin: 0; font-size: .9375rem; font-weight: 700; }
+.agl-ck-cat__desc { margin: 0; font-size: .875rem; color: #495057; line-height: 1.5; }
+.agl-ck-cat__meta { margin: .5rem 0 0; font-size: .75rem; color: #868e96; }
+
+/* Switch accesible: el input real queda visualmente oculto pero enfocable. */
+.agl-ck-sw { flex: 0 0 auto; position: relative; display: inline-flex; align-items: center; }
+.agl-ck-sw input {
+    position: absolute; opacity: 0; width: 100%; height: 100%;
+    margin: 0; cursor: pointer;
+}
+.agl-ck-sw__track {
+    width: 44px; height: 24px; border-radius: 12px;
+    background: #CED4DA; position: relative;
+    transition: background-color .15s ease;
+    pointer-events: none;
+}
+.agl-ck-sw__track::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; transition: transform .15s ease;
+}
+.agl-ck-sw input:checked + .agl-ck-sw__track { background: #479AD5; }
+.agl-ck-sw input:checked + .agl-ck-sw__track::after { transform: translateX(20px); }
+.agl-ck-sw input:disabled { cursor: not-allowed; }
+.agl-ck-sw input:disabled + .agl-ck-sw__track { background: #A5C9E4; }
+
+/* ---------- Enlace para reabrir preferencias ---------- */
+.agl-ck-reopen {
+    background: none; border: none; padding: 0;
+    font: inherit; color: inherit;
+    text-decoration: underline; cursor: pointer;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 767px) {
+    .agl-ck {
+        left: .5rem; right: .5rem; bottom: .5rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        padding: 1.125rem;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+    .agl-ck__actions { flex-direction: column; align-items: stretch; }
+    .agl-ck-btn { width: 100%; text-align: center; }
+    .agl-ck-modal__foot { flex-direction: column-reverse; }
+    .agl-ck-modal__foot .agl-ck-btn { width: 100%; }
+}

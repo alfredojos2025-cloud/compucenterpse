@@ -1,0 +1,182 @@
+/**
+ * Banner de cookies - Agualogic
+ *
+ * JavaScript vanilla a proposito: el footer del theme reemplaza window.jQuery
+ * por jQuery 3.5.1 slim DESPUES de wp_footer(), asi que cualquier codigo que
+ * resuelva jQuery tarde recibe el slim. Ver CLAUDE.md.
+ *
+ * El consentimiento se guarda en la cookie AGLCK.NAME como JSON. El estado por
+ * defecto (denied) lo emite PHP en wp_head, antes de que cargue cualquier tag.
+ */
+(function () {
+    'use strict';
+
+    var AGLCK = window.AGLCK || {};
+    var NAME = AGLCK.name || 'agualogic_consent';
+    // parseInt obligatorio: wp_localize_script castea todo a string, y una
+    // comparacion estricta contra "1" haria que el banner nunca se oculte.
+    var VERSION = parseInt(AGLCK.version, 10) || 1;
+    var DAYS = parseInt(AGLCK.days, 10) || 180;
+
+    /* ---------- Cookie ---------- */
+
+    function readConsent() {
+        var match = document.cookie.match(
+            new RegExp('(?:^|; )' + NAME.replace(/([.*+?^${}()|[\]\\])/g, '\\$1') + '=([^;]*)')
+        );
+        if (!match) { return null; }
+        try {
+            var data = JSON.parse(decodeURIComponent(match[1]));
+            // Si cambian las categorias se sube VERSION y se vuelve a preguntar.
+            if (!data || data.v !== VERSION) { return null; }
+            return data;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeConsent(analytics, ads) {
+        var data = { v: VERSION, analytics: !!analytics, ads: !!ads, t: Date.now() };
+        var expires = new Date(Date.now() + DAYS * 864e5).toUTCString();
+        var cookie = NAME + '=' + encodeURIComponent(JSON.stringify(data)) +
+            ';expires=' + expires + ';path=/;SameSite=Lax';
+        if (location.protocol === 'https:') { cookie += ';Secure'; }
+        document.cookie = cookie;
+        return data;
+    }
+
+    /* ---------- Senal a GTM ---------- */
+
+    function notify(data) {
+        window.dataLayer = window.dataLayer || [];
+
+        // Consent Mode v2: Google respeta esto en GA4 y Ads sin reconfigurar tags.
+        function gtag() { window.dataLayer.push(arguments); }
+        gtag('consent', 'update', {
+            ad_storage: data.ads ? 'granted' : 'denied',
+            ad_user_data: data.ads ? 'granted' : 'denied',
+            ad_personalization: data.ads ? 'granted' : 'denied',
+            analytics_storage: data.analytics ? 'granted' : 'denied'
+        });
+
+        // Hotjar y los tags de Custom HTML NO respetan Consent Mode: hay que
+        // condicionar sus triggers en GTM a este evento.
+        window.dataLayer.push({
+            event: 'agualogic_consent_update',
+            agl_consent_analytics: data.analytics ? 'granted' : 'denied',
+            agl_consent_ads: data.ads ? 'granted' : 'denied'
+        });
+    }
+
+    /* ---------- UI ---------- */
+
+    var banner, modal, swAnalytics, swAds, lastFocus;
+
+    function showBanner() { if (banner) { banner.hidden = false; } }
+    function hideBanner() { if (banner) { banner.hidden = true; } }
+
+    function openModal() {
+        if (!modal) { return; }
+        var current = readConsent();
+        if (swAnalytics) { swAnalytics.checked = current ? !!current.analytics : false; }
+        if (swAds) { swAds.checked = current ? !!current.ads : false; }
+
+        lastFocus = document.activeElement;
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+
+        var first = modal.querySelector('button, input:not([disabled])');
+        if (first) { first.focus(); }
+    }
+
+    function closeModal() {
+        if (!modal) { return; }
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        if (lastFocus && typeof lastFocus.focus === 'function') { lastFocus.focus(); }
+    }
+
+    function save(analytics, ads) {
+        notify(writeConsent(analytics, ads));
+        closeModal();
+        hideBanner();
+    }
+
+    /* ---------- Foco atrapado dentro del modal ---------- */
+
+    function trapFocus(e) {
+        if (e.key !== 'Tab' || !modal || modal.hidden) { return; }
+        var focusables = modal.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), a[href]'
+        );
+        if (!focusables.length) { return; }
+        var first = focusables[0];
+        var last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault(); first.focus();
+        }
+    }
+
+    /* ---------- Arranque ---------- */
+
+    function init() {
+        banner = document.getElementById('agl-ck-banner');
+        modal = document.getElementById('agl-ck-modal');
+        swAnalytics = document.getElementById('agl-ck-sw-analytics');
+        swAds = document.getElementById('agl-ck-sw-ads');
+
+        if (!banner && !modal) { return; }
+
+        // Delegado en body: sirve para el banner, el modal y para cualquier
+        // enlace de "Preferencias de cookies" que se agregue despues.
+        document.body.addEventListener('click', function (e) {
+            var el = e.target.closest ? e.target.closest('[data-agl-ck]') : null;
+            if (!el) { return; }
+            var action = el.getAttribute('data-agl-ck');
+
+            if (action === 'accept-all') { e.preventDefault(); save(true, true); }
+            else if (action === 'reject-all') { e.preventDefault(); save(false, false); }
+            else if (action === 'open') { e.preventDefault(); openModal(); }
+            else if (action === 'close') { e.preventDefault(); closeModal(); }
+            else if (action === 'save') {
+                e.preventDefault();
+                save(swAnalytics && swAnalytics.checked, swAds && swAds.checked);
+            }
+        });
+
+        // Clic en el fondo oscuro cierra, pero sin guardar nada.
+        if (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) { closeModal(); }
+            });
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal && !modal.hidden) { closeModal(); }
+            trapFocus(e);
+        });
+
+        // Sin decision previa se muestra el banner. Con decision previa el
+        // estado ya lo emitio PHP en el head, asi que aca no hay nada que hacer.
+        if (!readConsent()) { showBanner(); }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    /* ---------- API publica (debug y enlaces externos) ---------- */
+
+    window.agualogicCookies = {
+        open: openModal,
+        get: readConsent,
+        reset: function () {
+            document.cookie = NAME + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+            location.reload();
+        }
+    };
+})();
